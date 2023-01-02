@@ -36,6 +36,7 @@ func main() {
 
 	router.GET("/students", getStudents)
 	router.POST("/students", createStudent)
+	router.PATCH("/students/:id", updateStudent)
 	router.Run(":8080")
 }
 
@@ -81,4 +82,23 @@ func createStudent(c *gin.Context) {
 		log.Fatal(err)
 	}
 	c.JSON(http.StatusCreated, gin.H{"message": "Created new student"})
+}
+
+func updateStudent(c *gin.Context) {
+	db := c.MustGet("DB").(*sql.DB)
+	id := c.Param("id")
+	updateStmt := `UPDATE "students" SET "name"=$1 WHERE "id"=$2`
+	var updatedStudent student
+
+	if err := c.BindJSON(&updatedStudent); err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	_, err := db.Exec(updateStmt, updatedStudent.Name, id)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Updated student"})
 }
