@@ -37,6 +37,8 @@ func main() {
 	router.GET("/students", getStudents)
 	router.POST("/students", createStudent)
 	router.PATCH("/students/:id", updateStudent)
+	router.DELETE("/students/:id", deleteStudent)
+
 	router.Run(":8080")
 }
 
@@ -101,4 +103,17 @@ func updateStudent(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Updated student"})
+}
+
+func deleteStudent(c *gin.Context) {
+	db := c.MustGet("DB").(*sql.DB)
+	id := c.Param("id")
+	deleteStmt := `DELETE FROM "students" WHERE "id"=$1`
+
+	_, err := db.Exec(deleteStmt, id)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Deleted student"})
 }
