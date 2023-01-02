@@ -11,6 +11,11 @@ import (
 	_ "github.com/lib/pq"
 )
 
+type student struct {
+	ID   int    `json:"id"`
+	Name string `json:"name"`
+}
+
 func Database(connString string) gin.HandlerFunc {
 	db, err := sql.Open("postgres", os.Getenv("CONNECTION_STRING"))
 	if err != nil {
@@ -29,5 +34,32 @@ func main() {
 
 	router.Use(Database(os.Getenv("CONNECTION_STRING")))
 
+	router.GET("/students", getStudents)
 	router.Run(":8080")
+}
+
+func getStudents(c *gin.Context) {
+	db := c.MustGet("DB").(*sql.DB)
+	rows, err := db.Query("SELECT id,name FROM students")
+	var students []student
+	defer rows.Close()
+	if err != nil {
+		log.Fatal(err)
+		c.IndentedJSON(http.StatusNotFound, gin.H{"message": "Students not found"})
+	}
+
+	for rows.Next() {
+		var name string
+		var id int
+
+		err = rows.Scan(&id, &name)
+
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		student := student{ID: id, Name: name}
+		students = append(students, student)
+	}
+	c.JSON(http.StatusOK, students)
 }
