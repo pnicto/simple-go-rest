@@ -35,6 +35,7 @@ func main() {
 	router.Use(Database(os.Getenv("CONNECTION_STRING")))
 
 	router.GET("/students", getStudents)
+	router.POST("/students", createStudent)
 	router.Run(":8080")
 }
 
@@ -62,4 +63,22 @@ func getStudents(c *gin.Context) {
 		students = append(students, student)
 	}
 	c.JSON(http.StatusOK, students)
+}
+
+func createStudent(c *gin.Context) {
+	db := c.MustGet("DB").(*sql.DB)
+	insertStmt := `INSERT INTO "students"("name") VALUES($1)`
+
+	var newStudent student
+
+	if err := c.BindJSON(&newStudent); err != nil {
+		log.Fatal(err)
+		return
+	}
+
+	_, err := db.Exec(insertStmt, newStudent.Name)
+	if err != nil {
+		log.Fatal(err)
+	}
+	c.JSON(http.StatusCreated, gin.H{"message": "Created new student"})
 }
